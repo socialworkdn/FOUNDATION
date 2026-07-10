@@ -1,31 +1,724 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>กองทุนพระเทพฯ - มูลนิธิป่อเต็กตึ๊ง</title> <link rel="icon" type="image/png" href="https://img2.pic.in.th/Logo-sw.png">
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow: hidden; /* ซ่อน Scrollbar ของหน้าหลัก */
-        }
-        iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบันทึกงานสังคมสงเคราะห์ - รพ.สมเด็จพระสังฆราช</title><link rel="icon" type="image/png" href="https://img2.pic.in.th/Logo-sw.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; background-color: #f3f4f6; }
+    .nav-active { background-color: #e5e7eb; color: #1f2937; border-left: 4px solid #0d9488; }
+    .hidden-section { display: none; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+    }
+  </style>
 </head>
-<body>
+<body class="flex h-screen overflow-hidden">
 
-    <iframe src="https://script.google.com/macros/s/AKfycbzwt8z5Juv1b2FpxUp9A1EDubZ2TY9wIMdhhpuKf8VSLU1B2yyt39mjEyTuwf1TvZns_g/exec">
-        เบราว์เซอร์ของคุณไม่รองรับการแสดงผล iframe
-    </iframe>
+<!-- ============ SIDEBAR ============ -->
+<aside id="sidebar" class="w-64 bg-white shadow-md flex flex-col z-20 fixed md:relative h-full -translate-x-full md:translate-x-0 transition-transform duration-200">
+  <div class="p-5 text-center border-b">
+    <div class="w-20 h-20 mx-auto mb-2 rounded-full bg-teal-100 flex items-center justify-center">
+      <i class="fas fa-hospital text-teal-600 text-3xl"></i>
+    </div>
+    <h2 class="text-base font-bold text-gray-700 leading-tight">กลุ่มงานสังคมสงเคราะห์</h2>
+    <p class="text-xs text-gray-500 mt-1">รพ.สมเด็จพระสังฆราช (อมฺพรมหาเถร)</p>
+  </div>
+  <nav class="flex-1 p-4 space-y-1">
+    <a onclick="showSection('formSection')"    id="nav-form"      class="nav-item block p-3 rounded cursor-pointer hover:bg-gray-100 text-gray-600 nav-active"><i class="fas fa-edit w-5 mr-2"></i>บันทึกข้อมูล</a>
+    <a onclick="showSection('dashboardSection')" id="nav-dashboard" class="nav-item block p-3 rounded cursor-pointer hover:bg-gray-100 text-gray-600"><i class="fas fa-chart-pie w-5 mr-2"></i>Dashboard</a>
+    <a onclick="showSection('searchSection')"  id="nav-search"    class="nav-item block p-3 rounded cursor-pointer hover:bg-gray-100 text-gray-600"><i class="fas fa-search w-5 mr-2"></i>ค้นหาประวัติ</a>
+    <a onclick="showSection('reportSection')"  id="nav-report"    class="nav-item block p-3 rounded cursor-pointer hover:bg-gray-100 text-gray-600"><i class="fas fa-file-alt w-5 mr-2"></i>ออกรายงาน</a>
+  </nav>
+  <div class="p-4 border-t">
+    <p class="text-xs text-gray-400 text-center">v2.0 · GitHub Pages</p>
+  </div>
+</aside>
 
+<!-- overlay for mobile -->
+<div id="overlay" onclick="closeSidebar()" class="fixed inset-0 bg-black/30 z-10 hidden md:hidden"></div>
+
+<!-- ============ MAIN ============ -->
+<main class="flex-1 overflow-y-auto">
+
+  <!-- Topbar (mobile) -->
+  <div class="md:hidden sticky top-0 z-10 bg-white border-b flex items-center px-4 py-3 gap-3 shadow-sm no-print">
+    <button onclick="openSidebar()" class="p-1 text-gray-600"><i class="fas fa-bars text-xl"></i></button>
+    <span class="font-bold text-sm text-gray-700">กลุ่มงานสังคมสงเคราะห์</span>
+  </div>
+
+  <div class="p-4 md:p-8">
+
+  <!-- ======================================================
+       บันทึกข้อมูล
+  ====================================================== -->
+  <section id="formSection" class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm">
+    <h2 class="text-xl font-bold text-teal-700 mb-1 flex items-center gap-2">
+      <i class="fas fa-edit"></i> บันทึกข้อมูลการสงเคราะห์
+    </h2>
+    <p class="text-xs text-gray-400 mb-5">กรอกข้อมูล แล้วเลือกปลายทางการบันทึกก่อนกดบันทึก</p>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="label">วันที่</label>
+        <input type="date" id="f_date" class="input" required>
+      </div>
+      <div>
+        <label class="label">H.N.</label>
+        <input type="text" id="f_hn" class="input" placeholder="เลขผู้ป่วย" required>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <label class="label">ชื่อ-นามสกุล</label>
+      <input type="text" id="f_name" class="input" required>
+    </div>
+
+    <div class="mb-4 p-4 bg-gray-50 rounded-lg border">
+      <label class="label mb-2">ประเภทการสงเคราะห์</label>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="aid_medical" class="w-4 h-4"> ค่ารักษา</label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="aid_consumer" class="w-4 h-4"> ค่าอุปโภคบริโภค</label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="aid_transport" class="w-4 h-4"> ค่าพาหนะ</label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="aid_diaper" class="w-4 h-4"> ค่าแพมเพิส</label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="aid_milk" class="w-4 h-4"> ค่านมผง</label>
+        <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="aid_other_check" class="w-4 h-4" onchange="toggleOther(this)"> อื่นๆ</label>
+      </div>
+      <input type="text" id="aid_other_text" class="input mt-2 hidden" placeholder="โปรดระบุ...">
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="label">จำนวนเงิน (บาท)</label>
+        <input type="number" id="f_amount" class="input" min="0" step="0.01" required>
+      </div>
+      <div>
+        <label class="label">ผู้รับเงิน <span class="text-gray-400 font-normal">(เว้นว่าง = ชื่อผู้ป่วย)</span></label>
+        <input type="text" id="f_recipient" class="input" placeholder="ชื่อผู้รับเงิน">
+      </div>
+    </div>
+
+    <div class="mb-5">
+      <label class="label">ผู้เบิก / ผู้มอบ</label>
+      <select id="f_giver" class="input" required>
+        <option value="" disabled selected>เลือกเจ้าหน้าที่...</option>
+        <option>สถาพร อิ่มเอม</option>
+      </select>
+    </div>
+
+    <div class="mb-5 p-4 bg-amber-50 rounded-lg border border-amber-200">
+      <label class="block text-sm font-bold text-amber-700 mb-3">
+        <i class="fas fa-database mr-1"></i> บันทึกไปที่ (เลือกได้มากกว่า 1)
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="flex items-center gap-2 bg-white p-3 rounded border cursor-pointer hover:bg-pink-50 text-sm">
+          <input type="checkbox" id="target_fund" class="w-4 h-4"> กองทุนพระเทพฯ
+        </label>
+        <label class="flex items-center gap-2 bg-white p-3 rounded border cursor-pointer hover:bg-teal-50 text-sm">
+          <input type="checkbox" id="target_foundation" class="w-4 h-4"> มูลนิธิป่อเต็กตึ๊ง
+        </label>
+      </div>
+    </div>
+
+    <button onclick="submitForm()" class="w-full bg-teal-600 text-white py-3 rounded-lg font-bold hover:bg-teal-700 transition shadow">
+      <i class="fas fa-save mr-2"></i> บันทึกข้อมูล
+    </button>
+  </section>
+
+  <!-- ======================================================
+       Dashboard
+  ====================================================== -->
+  <section id="dashboardSection" class="hidden-section max-w-5xl mx-auto">
+    <div class="flex flex-wrap justify-between items-center gap-2 mb-1">
+      <h2 class="text-xl font-bold text-gray-700">สรุปข้อมูลการสงเคราะห์</h2>
+      <div class="flex flex-wrap gap-2">
+        <select id="dashSource" onchange="initDashboard()" class="input-sm font-bold">
+          <option value="all">รวมทั้ง 2 ระบบ</option>
+          <option value="fund">กองทุนพระเทพฯ</option>
+          <option value="foundation">มูลนิธิ</option>
+        </select>
+        <select id="dashYear"  onchange="loadDashboard()" class="input-sm"></select>
+        <select id="dashMonth" onchange="loadDashboard()" class="input-sm">
+          <option value="All">ทุกเดือน</option>
+        </select>
+      </div>
+    </div>
+    <p id="dashNote" class="text-xs text-amber-600 mb-4"></p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-blue-500">
+        <p class="text-xs text-gray-400 mb-1">ยอดเงินรวม</p>
+        <p class="text-2xl font-bold text-blue-600" id="dashTotal">—</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-green-500">
+        <p class="text-xs text-gray-400 mb-1">จำนวนครั้ง</p>
+        <p class="text-2xl font-bold text-green-600" id="dashCount">—</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl shadow border-l-4 border-orange-500">
+        <p class="text-xs text-gray-400 mb-1">จำนวนผู้ป่วย</p>
+        <p class="text-2xl font-bold text-orange-600" id="dashPatients">—</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="bg-white p-4 rounded-xl shadow">
+        <p class="text-sm font-bold text-center mb-3 text-gray-600">สัดส่วนประเภทการสงเคราะห์</p>
+        <canvas id="chartType"></canvas>
+      </div>
+      <div class="bg-white p-4 rounded-xl shadow">
+        <p class="text-sm font-bold text-center mb-3 text-gray-600">ยอดเบิกรายเดือน</p>
+        <canvas id="chartMonthly"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       ค้นหาประวัติ
+  ====================================================== -->
+  <section id="searchSection" class="hidden-section max-w-5xl mx-auto">
+    <h2 class="text-xl font-bold text-gray-700 mb-3">ค้นหาประวัติการเบิก / สงเคราะห์</h2>
+    <div class="flex flex-col md:flex-row gap-2 mb-1">
+      <select id="searchSource" class="input-sm font-bold md:w-52">
+        <option value="all">รวมทั้ง 2 ระบบ</option>
+        <option value="fund">กองทุนพระเทพฯ</option>
+        <option value="foundation">มูลนิธิ</option>
+      </select>
+      <input type="text" id="searchInput" placeholder="พิมพ์ H.N. หรือชื่อ-สกุล..." class="flex-1 border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" onkeydown="if(event.key==='Enter') doSearch()">
+      <button onclick="doSearch()" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold hover:bg-blue-700 transition">
+        <i class="fas fa-search mr-1"></i> ค้นหา
+      </button>
+    </div>
+    <p id="searchNote" class="text-xs text-amber-600 mb-4"></p>
+
+    <div id="searchResult" class="hidden">
+      <div class="flex justify-between items-center bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4">
+        <span class="text-sm text-blue-700 font-bold">ยอดเบิกรวมทั้งหมด</span>
+        <span class="text-xl font-bold text-blue-900" id="searchTotal"></span>
+      </div>
+      <div class="overflow-x-auto rounded-lg border">
+        <table class="w-full text-sm">
+          <thead class="bg-blue-600 text-white text-xs">
+            <tr>
+              <th class="px-3 py-3">ที่มา</th>
+              <th class="px-3 py-3">วันที่</th>
+              <th class="px-3 py-3">H.N.</th>
+              <th class="px-3 py-3">ชื่อ-สกุล</th>
+              <th class="px-3 py-3">การสงเคราะห์</th>
+              <th class="px-3 py-3 text-right">ยอดเบิก</th>
+              <th class="px-3 py-3 text-center">วันที่รับเงิน</th>
+            </tr>
+          </thead>
+          <tbody id="searchBody" class="bg-white divide-y"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       ออกรายงาน
+  ====================================================== -->
+  <section id="reportSection" class="hidden-section max-w-6xl mx-auto">
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-4 no-print">
+      <h2 class="text-xl font-bold text-gray-700">ออกรายงาน</h2>
+    </div>
+
+    <div class="bg-gray-50 border rounded-xl p-4 mb-5 no-print">
+      <div class="flex flex-col md:flex-row gap-4 items-end flex-wrap">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-2 uppercase">รูปแบบรายงาน</label>
+          <div class="flex gap-3 flex-wrap">
+            <label class="flex items-center gap-2 bg-white px-4 py-2 rounded border text-sm cursor-pointer">
+              <input type="radio" name="rptType" value="fund" checked onchange="onReportTypeChange()"> กองทุนพระเทพฯ (ปีงบประมาณ)
+            </label>
+            <label class="flex items-center gap-2 bg-white px-4 py-2 rounded border text-sm cursor-pointer">
+              <input type="radio" name="rptType" value="foundation" onchange="onReportTypeChange()"> มูลนิธิ (ปีปฏิทิน)
+            </label>
+          </div>
+        </div>
+        <div>
+          <label id="rptYearLabel" class="block text-xs font-bold text-gray-500 mb-2 uppercase">ปีงบประมาณ</label>
+          <select id="rptYear" class="input-sm" onchange="loadReport()"></select>
+        </div>
+        <div class="flex gap-2 ml-auto">
+          <button onclick="exportExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition font-bold">
+            <i class="fas fa-file-excel mr-1"></i> Excel
+          </button>
+          <button onclick="printPDF()" class="bg-red-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-600 transition font-bold">
+            <i class="fas fa-print mr-1"></i> PDF / พิมพ์
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow overflow-x-auto">
+      <table class="w-full text-sm" id="rptTable">
+        <thead class="bg-gray-700 text-white text-xs">
+          <tr>
+            <th class="px-4 py-3">วันที่</th>
+            <th class="px-4 py-3">H.N.</th>
+            <th class="px-4 py-3">ชื่อ-สกุล</th>
+            <th class="px-4 py-3">ประเภทการสงเคราะห์</th>
+            <th class="px-4 py-3 text-right">ยอดเบิก</th>
+            <th class="px-4 py-3" id="rptLastHeader">ผู้เบิก</th>
+          </tr>
+        </thead>
+        <tbody id="rptBody"></tbody>
+        <tfoot class="bg-gray-100 font-bold text-gray-800 text-sm">
+          <tr>
+            <td colspan="4" class="px-4 py-3 text-right">รวมทั้งสิ้น</td>
+            <td id="rptTotal" class="px-4 py-3 text-right">—</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </section>
+
+  </div><!-- /p-4 -->
+</main>
+
+<!-- ============ STYLES ============ -->
+<style>
+  .label { display: block; font-size: 0.8rem; font-weight: 600; color: #374151; margin-bottom: 4px; }
+  .input { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.875rem; font-family: 'Sarabun', sans-serif; outline: none; transition: box-shadow .15s; }
+  .input:focus { box-shadow: 0 0 0 3px rgba(13,148,136,.25); border-color: #0d9488; }
+  .input-sm { padding: 7px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.8rem; font-family: 'Sarabun', sans-serif; outline: none; }
+</style>
+
+<!-- ============ SCRIPT ============ -->
+<script>
+// ================================================================
+// ⚙️  CONFIG — เปลี่ยน URL นี้เป็น URL ของ GAS Web App ที่ Deploy แล้ว
+// ================================================================
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzwt8z5Juv1b2FpxUp9A1EDubZ2TY9wIMdhhpuKf8VSLU1B2yyt39mjEyTuwf1TvZns_g/exec";
+
+// ================================================================
+// API LAYER — ห่อ fetch ให้เรียกง่าย
+// ================================================================
+async function apiGet(params) {
+  const url = GAS_URL + "?" + new URLSearchParams(params).toString();
+  const res = await fetch(url);
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(GAS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// ================================================================
+// UTILS
+// ================================================================
+function fmtMoney(n) { return Number(n).toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(s) {
+  if (!s) return "-";
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString("th-TH",{year:"numeric",month:"2-digit",day:"2-digit"});
+}
+
+// ================================================================
+// SIDEBAR (mobile)
+// ================================================================
+function openSidebar()  { document.getElementById("sidebar").classList.remove("-translate-x-full"); document.getElementById("overlay").classList.remove("hidden"); }
+function closeSidebar() { document.getElementById("sidebar").classList.add("-translate-x-full");    document.getElementById("overlay").classList.add("hidden"); }
+
+// ================================================================
+// NAVIGATION
+// ================================================================
+function showSection(id) {
+  document.querySelectorAll("section").forEach(s => s.classList.add("hidden-section"));
+  document.getElementById(id).classList.remove("hidden-section");
+  document.querySelectorAll(".nav-item").forEach(a => a.classList.remove("nav-active"));
+  document.querySelector(`[onclick="showSection('${id}')"]`).classList.add("nav-active");
+  closeSidebar();
+  if (id === "dashboardSection") initDashboard();
+  if (id === "reportSection")    initReport();
+}
+
+// ================================================================
+// FORM — บันทึกข้อมูล
+// ================================================================
+function toggleOther(cb) {
+  const el = document.getElementById("aid_other_text");
+  el.classList.toggle("hidden", !cb.checked);
+  el.required = cb.checked;
+  if (!cb.checked) el.value = "";
+}
+
+async function submitForm() {
+  // validate
+  const date = document.getElementById("f_date").value;
+  const hn   = document.getElementById("f_hn").value.trim();
+  const name = document.getElementById("f_name").value.trim();
+  const amount = document.getElementById("f_amount").value;
+  const giver  = document.getElementById("f_giver").value;
+
+  if (!date || !hn || !name || !amount || !giver) {
+    return Swal.fire("แจ้งเตือน","กรุณากรอกข้อมูลให้ครบถ้วน","warning");
+  }
+
+  const aidIds = ["aid_medical","aid_consumer","aid_transport","aid_diaper","aid_milk","aid_other_check"];
+  if (!aidIds.some(id => document.getElementById(id).checked)) {
+    return Swal.fire("แจ้งเตือน","กรุณาเลือกประเภทการสงเคราะห์อย่างน้อย 1 รายการ","warning");
+  }
+
+  const tFund = document.getElementById("target_fund").checked;
+  const tFound = document.getElementById("target_foundation").checked;
+  if (!tFund && !tFound) {
+    return Swal.fire("แจ้งเตือน","กรุณาเลือกปลายทางการบันทึกข้อมูลอย่างน้อย 1 รายการ","warning");
+  }
+
+  const otherCheck = document.getElementById("aid_other_check").checked;
+  const otherText  = document.getElementById("aid_other_text").value.trim();
+
+  const body = {
+    action: "saveData",
+    date, hn, name, amount, giver,
+    recipient: document.getElementById("f_recipient").value.trim(),
+    targets: [...(tFund ? ["fund"] : []), ...(tFound ? ["foundation"] : [])],
+    aid_medical:    document.getElementById("aid_medical").checked,
+    aid_consumer:   document.getElementById("aid_consumer").checked,
+    aid_transport:  document.getElementById("aid_transport").checked,
+    aid_diaper:     document.getElementById("aid_diaper").checked,
+    aid_milk:       document.getElementById("aid_milk").checked,
+    aid_other_check: otherCheck,
+    aid_other_text: otherText
+  };
+
+  Swal.fire({ title: "กำลังบันทึก...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    const res = await apiPost(body);
+    if (res.status === "success") {
+      Swal.fire({ icon:"success", title:"สำเร็จ!", text: res.message, timer:2000, showConfirmButton:false });
+      // reset form
+      ["f_date","f_hn","f_name","f_amount","f_recipient"].forEach(id => document.getElementById(id).value = "");
+      document.getElementById("f_giver").value = "";
+      aidIds.forEach(id => document.getElementById(id).checked = false);
+      document.getElementById("aid_other_text").classList.add("hidden");
+      document.getElementById("target_fund").checked = false;
+      document.getElementById("target_foundation").checked = false;
+    } else {
+      Swal.fire("เกิดข้อผิดพลาด", res.message, "error");
+    }
+  } catch(e) {
+    Swal.fire("เกิดข้อผิดพลาด", e.toString(), "error");
+  }
+}
+
+// ================================================================
+// DASHBOARD
+// ================================================================
+let allDashData = [];
+let chartType, chartMonthly;
+
+async function initDashboard() {
+  const source = document.getElementById("dashSource").value;
+  const noteEl = document.getElementById("dashNote");
+  noteEl.innerText = source === "all"
+    ? "หมายเหตุ: รายการที่บันทึกไว้ทั้ง 2 ระบบจะถูกนับซ้ำ แนะนำเลือกดูแยกระบบเพื่อความถูกต้อง"
+    : "";
+
+  Swal.fire({ title:"กำลังโหลดข้อมูล...", didOpen: () => Swal.showLoading() });
+  try {
+    const res = await apiGet({ action: "getAllData", source });
+    Swal.close();
+    if (res.status !== "success") throw new Error(res.message);
+    allDashData = res.data;
+
+    // populate year dropdown
+    const years = [...new Set(allDashData.map(r => r.fiscalYear))].sort().reverse();
+    const ys = document.getElementById("dashYear");
+    ys.innerHTML = '<option value="All">ทุกปีรวมกัน</option>';
+    years.forEach(y => ys.innerHTML += `<option value="${y}">${y}</option>`);
+
+    // populate month dropdown
+    const thaiMonths = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+    const ms = document.getElementById("dashMonth");
+    ms.innerHTML = '<option value="All">ทุกเดือน</option>';
+    thaiMonths.forEach((m,i) => ms.innerHTML += `<option value="${i+1}">${m}</option>`);
+
+    loadDashboard();
+  } catch(e) {
+    Swal.fire("Error", "โหลดข้อมูลไม่ได้: " + e.toString(), "error");
+  }
+}
+
+function loadDashboard() {
+  const selYear  = document.getElementById("dashYear").value;
+  const selMonth = document.getElementById("dashMonth").value;
+
+  const filtered = allDashData.filter(r => {
+    if (selYear  !== "All" && r.fiscalYear != selYear)  return false;
+    if (selMonth !== "All" && r.month != selMonth) return false;
+    return true;
+  });
+
+  const total = filtered.reduce((s,r) => s + r.amount, 0);
+  document.getElementById("dashTotal").innerText    = fmtMoney(total) + " บาท";
+  document.getElementById("dashCount").innerText    = filtered.length + " ครั้ง";
+  document.getElementById("dashPatients").innerText = new Set(filtered.map(r => r.hn)).size + " คน";
+
+  // type chart
+  const typeCounts = {};
+  filtered.forEach(r => {
+    (r.aidTypes || "").split(", ").forEach(t => {
+      if (!t) return;
+      const key = t.includes("อื่นๆ") ? "อื่นๆ" : t;
+      typeCounts[key] = (typeCounts[key] || 0) + 1;
+    });
+  });
+  if (chartType) chartType.destroy();
+  chartType = new Chart(document.getElementById("chartType").getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: Object.keys(typeCounts),
+      datasets: [{ label:"ครั้ง", data: Object.values(typeCounts),
+        backgroundColor:["#14b8a6","#f59e0b","#3b82f6","#ec4899","#6366f1","#9ca3af"] }]
+    },
+    options: { plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 } } } }
+  });
+
+  // monthly chart — เรียงตามปีงบประมาณ (ต.ค. → ก.ย.) เมื่อเลือกปีเฉพาะ
+  const monthlySums = Array(12).fill(0);
+  filtered.forEach(r => {
+    const m = (r.month || 1) - 1;
+    if (m >= 0 && m < 12) monthlySums[m] += r.amount;
+  });
+  const calMon = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const fiscalOrder = [9,10,11,0,1,2,3,4,5,6,7,8];
+  const order = (selYear !== "All") ? fiscalOrder : [0,1,2,3,4,5,6,7,8,9,10,11];
+
+  if (chartMonthly) chartMonthly.destroy();
+  chartMonthly = new Chart(document.getElementById("chartMonthly").getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: order.map(i => calMon[i]),
+      datasets: [{ label:"ยอดเงิน (บาท)", data: order.map(i => monthlySums[i]), backgroundColor:"#0d9488" }]
+    }
+  });
+}
+
+// ================================================================
+// SEARCH
+// ================================================================
+async function doSearch() {
+  const keyword = document.getElementById("searchInput").value.trim();
+  if (!keyword) return Swal.fire("แจ้งเตือน","กรุณาระบุคำค้นหา","warning");
+
+  const source = document.getElementById("searchSource").value;
+  document.getElementById("searchNote").innerText = source === "all"
+    ? "หมายเหตุ: รายการที่บันทึกไว้ทั้ง 2 ระบบจะถูกนับซ้ำในยอดรวม"
+    : "";
+
+  Swal.fire({ title:"กำลังค้นหา...", didOpen: () => Swal.showLoading() });
+  try {
+    const res = await apiGet({ action:"searchHistory", keyword, source });
+    Swal.close();
+    if (res.status !== "success") throw new Error(res.message);
+
+    document.getElementById("searchResult").classList.remove("hidden");
+    document.getElementById("searchTotal").innerText = fmtMoney(res.total) + " บาท";
+
+    const tbody = document.getElementById("searchBody");
+    tbody.innerHTML = "";
+
+    if (!res.records.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-gray-400">ไม่พบข้อมูล</td></tr>`;
+      return;
+    }
+
+    res.records.forEach(r => {
+      const srcLabel = r.source === "fund"
+        ? `<span class="text-pink-600 font-bold text-xs">กองทุน</span>`
+        : `<span class="text-teal-600 font-bold text-xs">มูลนิธิ</span>`;
+
+      let aidDisplay = r.aidTypes || "";
+      if (r.otherDetail && r.otherDetail !== "-") aidDisplay += ` (${r.otherDetail})`;
+
+      let receiveCell;
+      if (r.source === "fund") {
+        if (r.receiveDate && r.receiveDate.trim()) {
+          receiveCell = `
+            <span class="text-green-600 font-bold text-xs"><i class="fas fa-check-circle mr-1"></i>${r.receiveDate}</span>
+            <button onclick="promptReceiveDate(${r.rowNumber},'${(r.name||'').replace(/'/g,'')}')" class="ml-1 text-gray-400 hover:text-blue-500" title="แก้ไข"><i class="fas fa-edit text-xs"></i></button>`;
+        } else {
+          receiveCell = `<button onclick="promptReceiveDate(${r.rowNumber},'${(r.name||'').replace(/'/g,'')}')" class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs hover:bg-green-200"><i class="fas fa-plus mr-1"></i>เพิ่มวันที่</button>`;
+        }
+      } else {
+        receiveCell = `<span class="text-gray-400 text-xs">ไม่รองรับ</span>`;
+      }
+
+      tbody.innerHTML += `
+        <tr class="hover:bg-gray-50 border-b text-sm">
+          <td class="px-3 py-3 text-center">${srcLabel}</td>
+          <td class="px-3 py-3 whitespace-nowrap">${fmtDate(r.date)}</td>
+          <td class="px-3 py-3 font-bold text-blue-600">${r.hn}</td>
+          <td class="px-3 py-3">${r.name}</td>
+          <td class="px-3 py-3 text-xs text-gray-500 max-w-xs truncate">${aidDisplay}</td>
+          <td class="px-3 py-3 text-right font-bold">${fmtMoney(r.amount)}</td>
+          <td class="px-3 py-3 text-center">${receiveCell}</td>
+        </tr>`;
+    });
+  } catch(e) {
+    Swal.fire("Error", "ค้นหาไม่ได้: " + e.toString(), "error");
+  }
+}
+
+function promptReceiveDate(rowNum, name) {
+  Swal.fire({
+    title: "ระบุวันที่รับเงิน",
+    html: `<div class="text-sm text-gray-500 mb-2">ผู้ป่วย: <b>${name}</b></div>`,
+    input: "date",
+    showCancelButton: true,
+    confirmButtonText: "บันทึก",
+    cancelButtonText: "ยกเลิก",
+    confirmButtonColor: "#10b981"
+  }).then(async r => {
+    if (!r.isConfirmed || !r.value) return;
+    Swal.fire({ title:"กำลังบันทึก...", allowOutsideClick:false, didOpen:()=>Swal.showLoading() });
+    try {
+      const res = await apiPost({ action:"updateReceiveDate", rowNumber:rowNum, dateStr:r.value, sourceSheet:"fund" });
+      if (res.status === "success") {
+        Swal.fire({ icon:"success", title:"สำเร็จ", timer:1500, showConfirmButton:false });
+        doSearch();
+      } else {
+        Swal.fire("เกิดข้อผิดพลาด", res.message, "error");
+      }
+    } catch(e) { Swal.fire("Error", e.toString(), "error"); }
+  });
+}
+
+// ================================================================
+// REPORT
+// ================================================================
+let currentReport = { records:[], total:0 };
+
+function getRptType() { return document.querySelector('input[name="rptType"]:checked').value; }
+
+function onReportTypeChange() {
+  const type = getRptType();
+  document.getElementById("rptYearLabel").innerText = type === "foundation" ? "ปีปฏิทิน" : "ปีงบประมาณ";
+  document.getElementById("rptLastHeader").innerText = type === "foundation" ? "ผู้รับเงิน" : "ผู้เบิก";
+  initReport();
+}
+
+function initReport() {
+  const type = getRptType();
+  const now  = new Date();
+  const curYear = now.getFullYear() + 543;
+  const sel = document.getElementById("rptYear");
+  sel.innerHTML = "";
+  for (let i = 0; i < 4; i++) {
+    const y = curYear - i;
+    const label = (type === "foundation" ? "ปี " : "ปีงบ ") + y;
+    sel.innerHTML += `<option value="${y}">${label}</option>`;
+  }
+  loadReport();
+}
+
+async function loadReport() {
+  const year = document.getElementById("rptYear").value;
+  const type = getRptType();
+  const tbody = document.getElementById("rptBody");
+  tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-gray-400">กำลังโหลด...</td></tr>`;
+
+  try {
+    const res = await apiGet({ action:"getReportData", year, reportType:type });
+    if (res.status !== "success") throw new Error(res.message);
+    currentReport = res;
+    document.getElementById("rptTotal").innerText = fmtMoney(res.total);
+    tbody.innerHTML = "";
+    if (!res.records.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-gray-400">ไม่มีข้อมูลในปีที่เลือก</td></tr>`;
+      return;
+    }
+    res.records.forEach(r => {
+      const lastCol = type === "foundation" ? (r.recipient||"-") : (r.giver||"-");
+      tbody.innerHTML += `
+        <tr class="hover:bg-gray-50 border-b text-sm">
+          <td class="px-4 py-2 whitespace-nowrap">${r.date}</td>
+          <td class="px-4 py-2">${r.hn}</td>
+          <td class="px-4 py-2">${r.name}</td>
+          <td class="px-4 py-2 text-xs text-gray-600">${r.aidTypes}</td>
+          <td class="px-4 py-2 text-right">${fmtMoney(r.amount)}</td>
+          <td class="px-4 py-2 text-xs text-gray-500">${lastCol}</td>
+        </tr>`;
+    });
+  } catch(e) {
+    Swal.fire("Error", "โหลดรายงานไม่ได้: " + e.toString(), "error");
+  }
+}
+
+function exportExcel() {
+  if (!currentReport.records.length) return Swal.fire("แจ้งเตือน","ไม่มีข้อมูล","warning");
+  const type = getRptType();
+  const year = document.getElementById("rptYear").value;
+  const lastLabel = type === "foundation" ? "ผู้รับเงิน" : "ผู้เบิก";
+  let rows = [["วันที่","H.N.","ชื่อ-นามสกุล","ประเภทการสงเคราะห์","ยอดเบิก (บาท)", lastLabel]];
+  currentReport.records.forEach(r => {
+    rows.push([r.date, r.hn, r.name, r.aidTypes, r.amount, type === "foundation" ? (r.recipient||"-") : (r.giver||"-")]);
+  });
+  rows.push(["","","","รวมทั้งสิ้น", currentReport.total,""]);
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Report");
+  const prefix = type === "foundation" ? "รายงานมูลนิธิ_ปี" : "รายงานกองทุนพระเทพฯ_ปีงบ";
+  XLSX.writeFile(wb, `${prefix}${year}.xlsx`);
+}
+
+function printPDF() {
+  if (!currentReport.records.length) return Swal.fire("แจ้งเตือน","ไม่มีข้อมูล","warning");
+  const type = getRptType();
+  const year = document.getElementById("rptYear").value;
+  const lastLabel = type === "foundation" ? "ผู้รับเงิน" : "ผู้เบิก";
+  const title = type === "foundation" ? "รายงานการสงเคราะห์เงินมูลนิธิป่อเต็กตึ๊ง" : "รายงานการเบิกเงินกองทุนพระเทพฯ";
+  const yearLabel = type === "foundation" ? `ประจำปีปฏิทิน ${year}` : `ประจำปีงบประมาณ ${year}`;
+
+  let rows = currentReport.records.map((r,i) => {
+    const last = type === "foundation" ? (r.recipient||"-") : (r.giver||"-");
+    return `<tr><td class="c">${r.date}</td><td class="c">${r.hn}</td><td>${r.name}</td><td>${r.aidTypes}</td><td class="r">${fmtMoney(r.amount)}</td><td>${last}</td></tr>`;
+  }).join("");
+
+  const w = window.open("","_blank");
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>${title}</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap');
+      body{font-family:Sarabun,sans-serif;padding:20px}
+      h2{text-align:center;margin-bottom:4px;font-size:18px}
+      p{text-align:center;margin:0 0 16px;font-size:14px}
+      table{width:100%;border-collapse:collapse;font-size:13px}
+      th,td{border:1px solid #000;padding:5px 8px}
+      th{background:#f2f2f2;text-align:center}
+      .c{text-align:center}.r{text-align:right}
+      .tot{font-weight:bold;background:#e5e7eb}
+      @page{size:A4 landscape;margin:1.5cm}
+      @media print{body{padding:0;margin:0}}
+    </style></head><body>
+    <h2>${title}</h2>
+    <p>โรงพยาบาลสมเด็จพระสังฆราช (อมฺพรมหาเถร) จังหวัดราชบุรี<br>${yearLabel}</p>
+    <table>
+      <thead><tr><th>วันที่</th><th>H.N.</th><th>ชื่อ-นามสกุล</th><th>ประเภทการสงเคราะห์</th><th>ยอดเบิก (บาท)</th><th>${lastLabel}</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr class="tot"><td colspan="4" class="r">รวมทั้งสิ้น</td><td class="r">${fmtMoney(currentReport.total)}</td><td>บาท</td></tr></tfoot>
+    </table>
+    <script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
+  </body></html>`);
+  w.document.close();
+}
+</script>
 </body>
 </html>
